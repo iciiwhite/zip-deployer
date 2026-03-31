@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub ZIP to Repo Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .log-window::-webkit-scrollbar { width: 8px; }
+        .log-window::-webkit-scrollbar-track { background: #1f2937; }
+        .log-window::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .log-window::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800 antialiased selection:bg-blue-200 p-4 sm:p-8">
+    <main class="max-w-4xl mx-auto space-y-6">
+        <header class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center p-3 bg-blue-100 text-blue-600 rounded-2xl mb-2">
+                <i data-lucide="github" class="w-8 h-8"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">GitHub ZIP Deployer</h1>
+            <p class="text-slate-500">Unpack and push a ZIP file directly to your repository, right from the browser.</p>
+        </header>
+        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <div class="p-6 sm:p-8 space-y-6">
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="key" class="w-5 h-5 text-slate-400"></i>
+                        Authentication
+                    </h2>
+                    <div>
+                        <label for="pat" class="block text-sm font-medium text-slate-700 mb-1">Personal Access Token (Classic or Fine-grained)</label>
+                        <input type="text" id="pat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
+                            class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none">
+                        <p class="text-xs text-slate-400 mt-1">Requires 'repo' scope. Your token never leaves your browser.</p>
+                    </div>
+                </div>
+                <hr class="border-slate-100">
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="folder-git-2" class="w-5 h-5 text-slate-400"></i>
+                        Target Repository
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="owner" class="block text-sm font-medium text-slate-700 mb-1">Owner / Username</label>
+                            <input type="text" id="owner" placeholder="e.g., octocat" 
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none">
+                        </div>
+                        <div>
+                            <label for="repo" class="block text-sm font-medium text-slate-700 mb-1">Repository Name</label>
+                            <input type="text" id="repo" placeholder="e.g., hello-world" 
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none">
+                        </div>
+                        <div>
+                            <label for="branch" class="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+                            <input type="text" id="branch" value="main" 
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none">
+                        </div>
+                    </div>
+                </div>
+                <hr class="border-slate-100">
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="file-archive" class="w-5 h-5 text-slate-400"></i>
+                        Project ZIP
+                    </h2>
+                    <label for="zip-file" class="flex flex-col items-center justify-center w-full h-40 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i data-lucide="upload-cloud" class="w-10 h-10 text-slate-400 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                            <p class="mb-2 text-sm text-slate-600"><span class="font-semibold text-blue-600">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-slate-500" id="file-name-display">.ZIP files only</p>
+                        </div>
+                        <input id="zip-file" type="file" accept=".zip" class="hidden" />
+                    </label>
+                </div>
+                <button id="upload-btn" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="rocket" class="w-5 h-5"></i>
+                    <span>Deploy to GitHub</span>
+                </button>
+            </div>
+            <div class="bg-slate-900 p-6 text-slate-300 font-mono text-sm">
+                <div class="flex items-center gap-2 mb-3 text-slate-500">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                    <span>Deployment Log</span>
+                </div>
+                <div id="log" class="log-window h-48 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">System ready. Waiting for task...</div>
+            </div>
+        </div>
+    </main>
+    <script>
+        lucide.createIcons();
+        const fileInput = document.getElementById('zip-file');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const uploadBtn = document.getElementById('upload-btn');
+        const logWindow = document.getElementById('log');
+        const inputs = {
+            pat: document.getElementById('pat'),
+            owner: document.getElementById('owner'),
+            repo: document.getElementById('repo'),
+            branch: document.getElementById('branch')
+        };
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fileNameDisplay.innerHTML = `<span class="text-blue-600 font-semibold">${file.name}</span> (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            } else {
+                fileNameDisplay.textContent = '.ZIP files only';
+            }
+        });
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-slate-300';
+            if (type === 'error') color = 'text-red-400';
+            if (type === 'success') color = 'text-emerald-400';
+            if (type === 'warn') color = 'text-yellow-400';
+            logWindow.innerHTML += `\n<span class="text-slate-500">[${time}]</span> <span class="${color}">${message}</span>`;
+            logWindow.scrollTop = logWindow.scrollHeight;
+        }
+        uploadBtn.addEventListener('click', async () => {
+            const token = inputs.pat.value.trim();
+            const owner = inputs.owner.value.trim();
+            const repo = inputs.repo.value.trim();
+            const branch = inputs.branch.value.trim() || 'main';
+            const file = fileInput.files[0];
+            if (!token || !owner || !repo || !file) {
+                alert("Please fill in all required fields and select a ZIP file.");
+                return;
+            }
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Processing...`;
+            lucide.createIcons();
+            log('\n--- Starting New Deployment ---', 'info');
+            const api = async (path, method = 'GET', body = null) => {
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}${path}`, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: body ? JSON.stringify(body) : null
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`API Error (${res.status}): ${errText}`);
+                }
+                if (res.status === 204) return null;
+                return res.json();
+            };
+            try {
+                log('Reading ZIP file in memory...');
+                const zip = await JSZip.loadAsync(file);
+                const filesToUpload = [];
+                zip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir && !relativePath.includes('__MACOSX') && !relativePath.includes('.DS_Store')) {
+                        filesToUpload.push({ path: relativePath, entry: zipEntry });
+                    }
+                });
+                log(`Found ${filesToUpload.length} valid files to process.`);
+                let latestCommitSha, baseTreeSha;
+                try {
+                    log(`Fetching branch '${branch}' details...`);
+                    const ref = await api(`/git/ref/heads/${branch}`);
+                    latestCommitSha = ref.object.sha;
+                    const latestCommit = await api(`/git/commits/${latestCommitSha}`);
+                    baseTreeSha = latestCommit.tree.sha;
+                } catch (e) {
+                    log(`Branch '${branch}' not found or repository empty. Attempting initialization...`, 'warn');
+                    try {
+                        await api(`/contents/README.md`, 'PUT', {
+                            message: "Initial commit by GitHub ZIP Deployer",
+                            content: btoa("# Project Repository\nInitialized automatically."),
+                            branch: branch
+                        });
+                        log('Successfully initialized repository with README.md', 'success');
+                        const ref = await api(`/git/ref/heads/${branch}`);
+                        latestCommitSha = ref.object.sha;
+                        const latestCommit = await api(`/git/commits/${latestCommitSha}`);
+                        baseTreeSha = latestCommit.tree.sha;
+                    } catch (initErr) {
+                        throw new Error(`Failed to initialize empty repository: ${initErr.message}`);
+                    }
+                }
+                log(`Uploading files as blobs...`);
+                const tree = [];
+                const batchSize = 10;
+                for (let i = 0; i < filesToUpload.length; i += batchSize) {
+                    const batch = filesToUpload.slice(i, i + batchSize);
+                    const uploadPromises = batch.map(async (fileObj) => {
+                        const content = await fileObj.entry.async("base64");
+                        const blob = await api('/git/blobs', 'POST', { 
+                            content: content, 
+                            encoding: 'base64' 
+                        });
+                        return {
+                            path: fileObj.path,
+                            mode: '100644',
+                            type: 'blob',
+                            sha: blob.sha
+                        };
+                    });
+                    const results = await Promise.all(uploadPromises);
+                    tree.push(...results);
+                    const processed = Math.min(i + batchSize, filesToUpload.length);
+                    log(`  -> Uploaded ${processed} / ${filesToUpload.length} files...`);
+                }
+                log('Constructing new Git tree...');
+                const newTree = await api('/git/trees', 'POST', {
+                    base_tree: baseTreeSha,
+                    tree: tree
+                });
+                log('Creating commit...');
+                const newCommit = await api('/git/commits', 'POST', {
+                    message: `Upload ZIP deployment via Web Client\n\nUploaded ${filesToUpload.length} files.`,
+                    tree: newTree.sha,
+                    parents: [latestCommitSha]
+                });
+                log('Updating branch reference to new commit...');
+                await api(`/git/refs/heads/${branch}`, 'PATCH', {
+                    sha: newCommit.sha,
+                    force: false
+                });
+                log(`Successfully deployed ${filesToUpload.length} files to ${owner}/${repo} on branch '${branch}'! 🎉`, 'success');
+                fileInput.value = '';
+                fileNameDisplay.textContent = '.ZIP files only';
+            } catch (error) {
+                log(`Deployment failed: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = `<i data-lucide="rocket" class="w-5 h-5"></i><span>Deploy to GitHub</span>`;
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
