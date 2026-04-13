@@ -16,6 +16,28 @@ A collection of command-line tools that extract a ZIP archive and push its conte
 
 ## Overview
 
+```mermaid
+flowchart TD
+    A[Start] --> B[Input token, owner, repo, branch, ZIP path]
+    B --> C{Read ZIP file}
+    C --> D[Extract files, filter __MACOSX & .DS_Store]
+    D --> E[Fetch branch reference]
+    E --> F{Branch exists?}
+    F -->|Yes| G[Get latest commit SHA and tree SHA]
+    F -->|No / empty repo| H[Initialize repo with README commit]
+    H --> G
+    G --> I[Batch files into groups of 10]
+    I --> J[Upload each file as Git blob via API]
+    J --> K[Collect blob SHAs]
+    K --> L{More files?}
+    L -->|Yes| I
+    L -->|No| M[Create new Git tree from base tree + blobs]
+    M --> N[Create commit with new tree, parent = latest commit]
+    N --> O[Update branch reference to new commit SHA]
+    O --> P[Success: deployed to GitHub]
+    P --> Q[End]
+```
+
 GitHub ZIP Deployer allows you to upload the contents of a ZIP file to a GitHub repository without cloning or using Git commands. Each language implementation follows the same workflow:
 
 1. Read a ZIP file from disk.
