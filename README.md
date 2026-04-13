@@ -55,27 +55,27 @@ Additionally, a browser-based HTML/JavaScript version is available in the origin
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/github-zip-deployer.git
+git clone https://github.com/iciiwhite/zip-deployer.git
 cd github-zip-deployer
 ```
 
 Then follow the language-specific setup.
 
-# Python
+### Python
 
 ```bash
 pip install requests colorama
 python app.py
 ```
 
-# Go
+### Go
 
 ```bash
 go run app.go
 # or build: go build -o deploy app.go
 ```
 
-# C++
+### C++
 
 Install dependencies (example for Ubuntu):
 
@@ -85,7 +85,7 @@ g++ -o app app.cxx -lcurl -lzip
 ./app
 ```
 
-# Erlang
+### Erlang
 
 Ensure jsx and ibrowse are available (use rebar3 or install via apt install erlang-jsx). Then:
 
@@ -93,20 +93,20 @@ Ensure jsx and ibrowse are available (use rebar3 or install via apt install erla
 escript app.erl
 ```
 
-# Ruby
+### Ruby
 
 ```bash
 gem install rubyzip
 ruby app.rb
 ```
 
-# PHP
+### PHP
 
 ```bash
 php index.php
 ```
 
-# Lua
+### Lua
 
 Install LuaRocks and dependencies:
 
@@ -116,7 +116,7 @@ luarocks install lua-zip
 luarocks install json-lua
 lua app.lua
 ```
-# Io
+### Io
 
 Requires Io language with Zip addon. Install Io from iolanguage.org then:
 
@@ -124,7 +124,7 @@ Requires Io language with Zip addon. Install Io from iolanguage.org then:
 io app.io
 ```
 
-# Rebol
+### Rebol
 
 Use Rebol 2 or 3. The script uses to-json and from-json helpers. Run:
 
@@ -132,7 +132,7 @@ Use Rebol 2 or 3. The script uses to-json and from-json helpers. Run:
 rebol app.reb
 ```
 
-# Haskell
+### Haskell
 
 Uses Stack. Run:
 
@@ -140,7 +140,7 @@ Uses Stack. Run:
 stack app.hs
 ```
 
-# Forth
+#s# Forth
 
 Requires Gforth, curl, jq, and unzip. Run:
 
@@ -148,7 +148,7 @@ Requires Gforth, curl, jq, and unzip. Run:
 gforth app.fs
 ```
 
-# Usage
+## Usage
 
 All language versions are interactive command-line tools. After starting the script, you will be prompted for:
 
@@ -158,7 +158,7 @@ All language versions are interactive command-line tools. After starting the scr
 · Target branch (default: main)
 · Path to the ZIP file
 
-## Example session (Python):
+### Example session (Python):
 
 ```
 $ python app.py
@@ -192,24 +192,34 @@ All implementations produce similar colored output with timestamps.
 ## How It Works
 
 1. **Authentication** – The tool uses the provided personal access token for all GitHub API requests.
+  
 2. **ZIP Processing** – The ZIP file is read and each file is extracted. Files inside __MACOSX/ or named .DS_Store are ignored.
+
 3. **Branch Handling** – The tool attempts to fetch the current commit SHA of the target branch. If the branch does not exist or the repository is empty, it creates an initial commit with a README.md.
+
 4. **Blob Upload** – Each file is uploaded as a Git blob using the POST /repos/{owner}/{repo}/git/blobs endpoint. Uploads are performed in parallel batches (default batch size = 10).
+
 5. **Tree Creation** – A new Git tree is created that references all uploaded blobs, using the existing tree as the base.
+
 6. **Commit Creation** – A commit is created with the new tree and the parent commit from the branch.
+
 7. **Branch Update** – The branch reference is updated to point to the new commit.
 
 All API calls are authenticated and respect GitHub's rate limits.
 
-# Troubleshooting
+## Troubleshooting
 
 · **Authentication failed** – Verify that your token has the repo scope and is valid. Ensure you are using the correct owner/repo names.
+
 · **Branch not found / empty repository** – The tool automatically initializes empty repositories. If you see errors, you may need to manually create an initial commit (e.g., via GitHub web interface) before using the tool.
+
 · **Rate limiting** – Authenticated requests have a limit of 5,000 per hour. If you exceed this, wait an hour or use a different token.
+
 · **Large ZIP files** – The tools load the entire ZIP into memory. For very large archives (e.g., >500MB), you may encounter memory issues. Consider splitting the archive or using a different approach.
+
 · **Missing dependencies** – Refer to the Installation section for each language. Most errors are due to missing libraries or incorrect runtime versions.
 
-# Contributing
+## Contributing
 
 Contributions are **welcome**. Please open an issue or submit a pull request. Areas for improvement:
 
@@ -218,9 +228,9 @@ Contributions are **welcome**. Please open an issue or submit a pull request. Ar
 · **Support incremental updates** (only changed files).
 · Add a configuration file option to avoid interactive prompts.
 
-# License
+## License
 
-> This project is licensed under the MIT License. See the [licence](LICENSE) file for details.
+> This project is licensed under the MIT License. See the [license](LICENSE) file for details.
 
 > Disclaimer
 
